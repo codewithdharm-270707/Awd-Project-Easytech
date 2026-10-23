@@ -1,0 +1,244 @@
+/* --- Course Detail Page CSS (Ultra Modern & Premium Look) --- */
+
+.details-container {
+  max-width: 1250px;
+  margin: 90px auto;
+  padding: 0 20px;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #0f172a;
+}
+
+/* Back Button with Smooth Glow */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  background: #ffffff;
+  color: #fda90c;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+  border: 1px solid #e0e7ff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.back-btn:hover {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #ffffff;
+  transform: translateX(-6px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.25);
+}
+
+/* Course Detail Main Section Box */
+.course-detail-section {
+  background: #ffffff;
+  padding: 55px;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.07);
+  border: 1px solid #f1f5f9;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative top gradient line */
+.course-detail-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+}
+
+.details-content h2 {
+  font-size: 40px;
+  color: #0f172a;
+  margin-bottom: 18px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+}
+
+.details-content .description {
+  font-size: 18px;
+  line-height: 1.8;
+  color: #475569;
+  margin-bottom: 35px;
+}
+
+/* Info Badges (Duration, Fees, Level) */
+.info-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.info-badges span {
+  background: #ffffff;
+  color: #fcba04;
+  padding: 12px 22px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease;
+}
+
+.info-badges span:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+}
+
+/* Subheadings */
+.details-content h3 {
+  font-size: 22px;
+  color: #1e293b;
+  margin-top: 40px;
+  margin-bottom: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+/* Grid Lists styling for Topics/Tools */
+.details-content ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-bottom: 25px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.details-content ul li {
+  position: relative;
+  padding: 14px 16px 14px 42px;
+  background: #f8fafc;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #334155;
+  line-height: 1.5;
+  border: 1px solid #edf2f7;
+  transition: all 0.2s ease;
+}
+
+.details-content ul li:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.details-content ul li::before {
+  content: "✓";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f8f3d6;
+  color: #f38a01;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+/* General Paragraphs inside content */
+.details-content p {
+  font-size: 16px;
+  color: #475569;
+  line-height: 1.7;
+  text-decoration: none;
+  margin-bottom: 20px;
+}
+
+/* Premium Enroll Button */
+.submit-btn {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  margin: 50px auto 0 auto;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: white;
+  border: none;
+  padding: 18px 28px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  box-shadow: 0 14px 30px rgba(245, 158, 11, 0.45);
+  transform: translateY(-3px);
+}
+
+.submit-btn:active {
+  transform: translateY(-1px);
+}
+
+/* Not Found Error Box */
+.not-found {
+  background: #fff;
+  padding: 70px 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.07);
+  text-align: center;
+  border: 1px solid #f1f5f9;
+}
+
+.not-found h2 {
+  color: #dc2626;
+  font-size: 30px;
+  margin-bottom: 15px;
+}
+
+.not-found p {
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* Responsive Design for Mobile & Tablet */
+@media (max-width: 768px) {
+  .details-container {
+    margin: 20px 10px;
+    padding: 0;
+  }
+
+  .course-detail-section {
+    padding: 25px;
+    border-radius: 16px;
+  }
+
+  .details-content h2 {
+    font-size: 28px;
+  }
+
+  .info-badges {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .details-content ul {
+    grid-template-columns: 1fr;
+  }
+}

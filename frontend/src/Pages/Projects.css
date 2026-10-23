@@ -1,0 +1,411 @@
+/* ============================================
+   PROJECTS.CSS - Professional Projects Page
+   ============================================ */
+
+/* ----------------------------------------------
+   BASE
+   ------------------------------------------------ */
+.project-page {
+  font-family: "Segoe UI", sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+  padding-top: 72px;
+}
+
+.project-page * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.project-page .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ----------------------------------------------
+   HERO SECTION
+   ------------------------------------------------ */
+.project-page .hero {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  padding: 80px 20px 70px;
+  text-align: center;
+  color: #fff;
+}
+
+.project-page .hero-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.project-page .hero-subtitle {
+  font-size: 1.15rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ----------------------------------------------
+   SERVICES / FILTER SECTION
+   ------------------------------------------------ */
+.project-page .services {
+  padding: 60px 20px;
+}
+
+.project-page .filter-btn-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.project-page .filter-btn-container button {
+  padding: 10px 28px;
+  border-radius: 50px;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.project-page .filter-btn-container button:hover {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.project-page .filter-btn-container button.active {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+}
+
+/* ----------------------------------------------
+   SERVICE GRID
+   ------------------------------------------------ */
+.project-page .services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+.project-page .service-card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.project-page .service-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  border-color: #f59e0b;
+}
+
+.project-page .card-image img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.project-page .card-content {
+  padding: 20px 24px 24px;
+}
+
+.project-page .card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.project-page .card-description {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* ----------------------------------------------
+   TEAM SECTION
+   ------------------------------------------------ */
+.project-page .team-section {
+  padding: 80px 20px;
+  background: #fff;
+}
+
+.project-page .team-section .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 50px;
+  flex-wrap: wrap;
+}
+
+.project-page .team-left {
+  flex: 1;
+  max-width: 450px;
+}
+
+.project-page .team-left h2 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.project-page .team-left .line {
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  border-radius: 10px;
+  margin: 16px 0;
+}
+
+.project-page .team-left p {
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.project-page .team-left .btn {
+  padding: 12px 32px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+}
+
+.project-page .team-left .btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(245, 158, 11, 0.35);
+}
+
+.project-page .team-right {
+  flex: 1;
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.project-page .team-card {
+  background: #f8fafc;
+  padding: 24px 28px;
+  border-radius: 16px;
+  text-align: center;
+  min-width: 250px;
+  min-height: 280px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.project-page .team-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  border-color: #f59e0b;
+}
+
+.project-page .team-card img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 12px;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.project-page .team-card h3 {
+  font-size: 25px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.project-page .team-card p {
+  color: #64748b;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.project-page .team-card .social {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.project-page .team-card .social i {
+  color: #f59e0b;
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.project-page .team-card .social i:hover {
+  color: #ef4444;
+  transform: translateY(-2px);
+}
+
+/* ----------------------------------------------
+   FAQ SECTION
+   ------------------------------------------------ */
+.project-page .faq {
+  padding: 80px 20px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.project-page .faq h2 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.project-page .faq .subtitle {
+  color: #64748b;
+  font-size: 1.05rem;
+  margin-bottom: 40px;
+}
+
+.project-page .faq-container {
+  max-width: 750px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.project-page .faq-item {
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.project-page .faq-item:hover {
+  border-color: #f59e0b;
+}
+
+.project-page .faq-question {
+  padding: 18px 24px;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.project-page .faq-question:hover {
+  color: #f59e0b;
+}
+
+.project-page .faq-question span {
+  color: #f59e0b;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.project-page .faq-answer {
+  padding: 0 24px 20px;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+}
+
+/* ----------------------------------------------
+   RESPONSIVE
+   ------------------------------------------------ */
+@media (max-width: 1024px) {
+  .project-page .team-section .container {
+    flex-direction: column;
+    text-align: center;
+  }
+  .project-page .team-left {
+    max-width: 100%;
+  }
+  .project-page .team-left .line {
+    margin: 16px auto;
+  }
+}
+
+@media (max-width: 820px) {
+  .project-page {
+    padding-top: 64px;
+  }
+  .project-page .hero-title {
+    font-size: 2.4rem;
+  }
+  .project-page .services-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+  .project-page .filter-btn-container button {
+    padding: 8px 18px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-page {
+    padding-top: 58px;
+  }
+  .project-page .hero {
+    padding: 50px 16px;
+  }
+  .project-page .hero-title {
+    font-size: 1.8rem;
+  }
+  .project-page .services {
+    padding: 40px 16px;
+  }
+  .project-page .services-grid {
+    grid-template-columns: 1fr;
+  }
+  .project-page .team-section {
+    padding: 50px 16px;
+  }
+  .project-page .team-left h2 {
+    font-size: 2rem;
+  }
+  .project-page .team-right {
+    flex-direction: column;
+    align-items: center;
+  }
+  .project-page .faq {
+    padding: 50px 16px;
+  }
+  .project-page .faq h2 {
+    font-size: 1.8rem;
+  }
+  .project-page .faq-question {
+    padding: 14px 18px;
+    font-size: 0.9rem;
+  }
+  .project-page .faq-answer {
+    padding: 0 18px 16px;
+    font-size: 0.85rem;
+  }
+  .project-page .filter-btn-container {
+    gap: 8px;
+  }
+  .project-page .filter-btn-container button {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+  }
+}
