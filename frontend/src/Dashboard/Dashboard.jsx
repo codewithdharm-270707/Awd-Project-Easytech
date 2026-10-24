@@ -22,7 +22,7 @@ const Dashboard = () => {
     }
 
     // Fetch User Profile
-    fetch('http://localhost:5000/api/user/profile', {
+    fetch('https://awd-project-easytech.onrender.com/api/user/profile', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -31,7 +31,7 @@ const Dashboard = () => {
 
     // Fetch Public Users List
     if (activeTab === 'users') {
-      fetch('http://localhost:5000/api/users/list', {
+      fetch('https://awd-project-easytech.onrender.com/api/users/list', {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -41,7 +41,7 @@ const Dashboard = () => {
 
     // Fetch Admin All Users
     if (activeTab === 'admin') {
-      fetch('http://localhost:5000/api/admin/users', {
+      fetch('https://awd-project-easytech.onrender.com/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -58,7 +58,7 @@ const Dashboard = () => {
 
   const handleAccountUpdate = async (e) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:5000/api/user/profile', {
+    const res = await fetch('https://awd-project-easytech.onrender.com/api/user/profile', {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ const Dashboard = () => {
 
   const handleAdminUserUpdate = async (e) => {
     e.preventDefault();
-    const res = await fetch(`http://localhost:5000/api/admin/users/${editingUser._id}`, {
+    const res = await fetch(`https://awd-project-easytech.onrender.com/api/admin/users/${editingUser._id}`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ const Dashboard = () => {
 
   const handleDeleteUser = async (id) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
+    const res = await fetch(`https://awd-project-easytech.onrender.com/api/admin/users/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     });
