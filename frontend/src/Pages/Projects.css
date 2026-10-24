@@ -409,3 +409,245 @@
     font-size: 0.75rem;
   }
 }
+/* ============================================
+   EXTRA RESPONSIVE FIXES
+   ============================================ */
+
+.project-page {
+  width: 100%;
+  overflow-x: clip;
+}
+
+.project-page .container {
+  width: 100%;
+}
+
+/* ---------- TABLET ---------- */
+@media (max-width: 1024px) {
+  .project-page .services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .project-page .team-section .container {
+    gap: 30px;
+  }
+
+  .project-page .team-right {
+    width: 100%;
+    gap: 20px;
+  }
+
+  .project-page .team-card {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+}
+
+/* ---------- MOBILE & TABLET ---------- */
+@media (max-width: 820px) {
+  .project-page .hero {
+    padding: 60px 20px;
+  }
+
+  .project-page .hero-title {
+    font-size: 2.2rem;
+    line-height: 1.3;
+  }
+
+  .project-page .hero-subtitle {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .project-page .services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .project-page .team-section .container {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .project-page .team-left {
+    width: 100%;
+  }
+
+  .project-page .team-left h2 {
+    font-size: 2.2rem;
+  }
+
+  .project-page .team-right {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 16px;
+  }
+
+  .project-page .team-card {
+    min-width: 0;
+    min-height: auto;
+    padding: 20px 12px;
+  }
+
+  .project-page .team-card h3 {
+    font-size: 1.25rem;
+    overflow-wrap: anywhere;
+  }
+
+  .project-page .team-card img {
+    width: 100px;
+    height: 100px;
+  }
+
+  .project-page .faq h2 {
+    line-height: 1.3;
+  }
+}
+
+/* ---------- MOBILE ---------- */
+@media (max-width: 480px) {
+  .project-page .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .project-page .hero {
+    padding: 45px 16px;
+  }
+
+  .project-page .hero-title {
+    font-size: 1.8rem;
+    line-height: 1.3;
+  }
+
+  .project-page .hero-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .project-page .services-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .project-page .card-image img {
+    height: 190px;
+  }
+
+  .project-page .card-content {
+    padding: 18px;
+  }
+
+  .project-page .filter-btn-container {
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .project-page .filter-btn-container button {
+    max-width: 100%;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+  }
+
+  .project-page .team-section {
+    padding: 40px 0;
+  }
+
+  .project-page .team-section .container {
+    gap: 28px;
+  }
+
+  .project-page .team-left h2 {
+    font-size: 1.8rem;
+  }
+
+  .project-page .team-left p {
+    font-size: 0.9rem;
+  }
+
+  .project-page .team-left .btn {
+    max-width: 100%;
+    padding: 11px 24px;
+  }
+
+  .project-page .team-right {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .project-page .team-card {
+    width: 100%;
+    padding: 24px 16px;
+  }
+
+  .project-page .team-card h3 {
+    font-size: 1.3rem;
+  }
+
+  .project-page .team-card .social {
+    flex-wrap: wrap;
+  }
+
+  .project-page .faq {
+    padding: 40px 0;
+  }
+
+  .project-page .faq h2 {
+    font-size: 1.7rem;
+  }
+
+  .project-page .faq .subtitle {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+
+  .project-page .faq-question {
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px;
+    font-size: 0.88rem;
+  }
+
+  .project-page .faq-question span {
+    flex-shrink: 0;
+  }
+
+  .project-page .faq-answer {
+    padding: 14px;
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ---------- SMALL MOBILE ---------- */
+@media (max-width: 360px) {
+  .project-page .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .project-page .hero-title {
+    font-size: 1.55rem;
+  }
+
+  .project-page .team-left h2 {
+    font-size: 1.55rem;
+  }
+
+  .project-page .team-card {
+    padding: 20px 12px;
+  }
+
+  .project-page .filter-btn-container button {
+    padding: 7px 11px;
+    font-size: 0.72rem;
+  }
+
+  .project-page .faq h2 {
+    font-size: 1.5rem;
+  }
+}

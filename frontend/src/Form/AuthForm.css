@@ -450,3 +450,244 @@ body {
     font-size: 12px;
   }
 }
+
+/* ==========================================
+   EXTRA RESPONSIVE FIXES
+   ========================================== */
+
+/* Prevent horizontal overflow */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.auth-body,
+.auth-body * {
+  box-sizing: border-box;
+}
+
+.auth-body .container {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.auth-body .register-box {
+  min-width: 0;
+  width: 100%;
+}
+
+.auth-body .form-row {
+  width: 100%;
+}
+
+.auth-body .form-column {
+  min-width: 0;
+}
+
+.auth-body .input-box input,
+.auth-body .input-box select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ---------- TABLET ---------- */
+@media (max-width: 868px) {
+  .auth-body {
+    justify-content: flex-start;
+    padding: 80px 20px 32px;
+  }
+
+  .auth-body .register-box {
+    max-width: 650px;
+    margin-top: 20px;
+  }
+
+  .auth-body .register-box.login-card {
+    max-width: 480px;
+  }
+
+  .auth-body .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .auth-body .form-column {
+    width: 100%;
+  }
+
+  .auth-body .time-options {
+    flex-direction: row;
+  }
+
+  .auth-body .slot-card {
+    min-width: 0;
+  }
+}
+
+/* ---------- MOBILE ---------- */
+@media (max-width: 480px) {
+  .auth-body {
+    padding: 72px 12px 24px;
+  }
+
+  .auth-body .container {
+    width: 100%;
+  }
+
+  .auth-body .register-box,
+  .auth-body .register-box.login-card {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 12px;
+    padding: 22px 16px;
+    border-radius: 14px;
+  }
+
+  .auth-body .register-box h2 {
+    font-size: 23px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .auth-body .register-box > p {
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+
+  .auth-body .form-row {
+    gap: 0;
+  }
+
+  .auth-body .input-box {
+    width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .auth-body .input-box input,
+  .auth-body .input-box select {
+    width: 100%;
+    padding: 13px 12px;
+    font-size: 14px;
+  }
+
+  .auth-body .input-box.password-box input {
+    padding-right: 42px;
+  }
+
+  .auth-body .toggle-password {
+    right: 12px;
+  }
+
+  .auth-body .radio-group {
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .auth-body .time-options {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .auth-body .slot-card {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .auth-body .terms-box {
+    margin-top: 24px;
+    border-radius: 12px;
+  }
+
+  .auth-body .terms-header {
+    gap: 10px;
+    padding: 13px 14px;
+  }
+
+  .auth-body .terms-header i {
+    font-size: 19px;
+    flex-shrink: 0;
+  }
+
+  .auth-body .terms-header h3 {
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .auth-body .terms-content {
+    max-height: 180px;
+    padding: 14px;
+  }
+
+  .auth-body .terms-content ul li {
+    font-size: 12px;
+    line-height: 1.6;
+    padding-left: 22px;
+    overflow-wrap: anywhere;
+  }
+
+  .auth-body .agree-box {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .auth-body .agree-box input {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .auth-body .agree-box span {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .auth-body .button-box {
+    margin-top: 24px;
+  }
+
+  .auth-body .button-box .btn {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 12px;
+    font-size: 15px;
+  }
+
+  .auth-body .footer-text {
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ---------- SMALL MOBILE ---------- */
+@media (max-width: 360px) {
+  .auth-body {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .auth-body .register-box,
+  .auth-body .register-box.login-card {
+    padding: 18px 12px;
+  }
+
+  .auth-body .register-box h2 {
+    font-size: 21px;
+  }
+
+  .auth-body .radio-group {
+    gap: 12px;
+  }
+
+  .auth-body .radio-group label {
+    gap: 7px;
+    font-size: 13px;
+  }
+
+  .auth-body .terms-content,
+  .auth-body .agree-box {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
