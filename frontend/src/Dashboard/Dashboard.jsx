@@ -17,7 +17,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!token) {
-      navigate('/login');
+      navigate('/login'); 
       return;
     }
 
