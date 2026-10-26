@@ -9,38 +9,64 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 
-// --- MIDDLEWARES ---
+// ================= MIDDLEWARES =================
+
 app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is missing from environment variables");
+if (!JWT_SECRET || !process.env.MONGODB_URI) {
+  throw new Error("JWT_SECRET or MONGODB_URI is missing from .env");
 }
 
-// --- MONGODB CONNECTION ---
+// ================= DATABASE CONNECTION =================
+
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB Atlas Connected Successfully"))
-  .catch((err) => console.error("MongoDB Connection Error:", err));
+  .catch((error) =>
+    console.error("MongoDB Connection Error:", error.message)
+  );
 
-// --- USER SCHEMA & MODEL ---
-const userSchema = new mongoose.Schema({
-  full_name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  phone: { type: String },
-  age: { type: Number },
-  gender: { type: String },
-  course: { type: String },
-  time_slot: { type: String },
-  role: { type: String, default: "user" },
-});
+// ================= USER MODEL =================
+
+const userSchema = new mongoose.Schema(
+  {
+    full_name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    phone: String,
+    age: Number,
+    gender: String,
+    course: String,
+    time_slot: String,
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+  },
+  { timestamps: true }
+);
 
 const User = mongoose.model("User", userSchema);
 
-// --- ANNOUNCEMENT MODEL ---
+// ================= ANNOUNCEMENT MODEL =================
+
 const announcementSchema = new mongoose.Schema(
   {
     title: {
@@ -66,9 +92,13 @@ const Announcement = mongoose.model(
   announcementSchema
 );
 
-// --- AUTHENTICATION MIDDLEWARE ---
+// ================= AUTHENTICATION MIDDLEWARE =================
+
 const auth = (req, res, next) => {
-  const token = req.header("Authorization")?.replace("Bearer ", "");
+  const authorization = req.header("Authorization");
+  const token = authorization?.startsWith("Bearer ")
+    ? authorization.slice(7)
+    : null;
 
   if (!token) {
     return res.status(401).json({
@@ -78,16 +108,24 @@ const auth = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (!decoded.id) {
+      return res.status(401).json({
+        message: "Invalid token payload",
+      });
+    }
+
     req.user = decoded;
     next();
-  } catch (err) {
+  } catch (error) {
     return res.status(401).json({
       message: "Token is invalid or expired",
     });
   }
 };
 
-// --- ADMIN MIDDLEWARE ---
+// ================= ADMIN MIDDLEWARE =================
+
 const adminOnly = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select("role");
@@ -100,13 +138,15 @@ const adminOnly = async (req, res, next) => {
 
     next();
   } catch (error) {
-    res.status(500).json({
+    console.error("Admin verification error:", error);
+
+    return res.status(500).json({
       message: "Failed to verify admin",
     });
   }
 };
 
-// --- AUTH ROUTES ---
+// ================= AUTH ROUTES =================
 
 // 1. Register User
 app.post("/api/auth/register", async (req, res) => {
@@ -122,25 +162,36 @@ app.post("/api/auth/register", async (req, res) => {
       time_slot,
     } = req.body;
 
-    if (!full_name || !email || !password) {
+    if (
+      typeof full_name !== "string" ||
+      !full_name.trim() ||
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string" ||
+      !password
+    ) {
       return res.status(400).json({
         message: "Full name, email and password are required",
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         message: "User already exists",
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
-      full_name,
-      email,
+    const newUser = await User.create({
+      full_name: full_name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
       phone,
       age,
@@ -150,10 +201,8 @@ app.post("/api/auth/register", async (req, res) => {
       role: "user",
     });
 
-    await newUser.save();
-
     const token = jwt.sign(
-      { id: newUser._id, role: newUser.role },
+      { id: newUser._id.toString() },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -161,14 +210,21 @@ app.post("/api/auth/register", async (req, res) => {
     const safeUser = newUser.toObject();
     delete safeUser.password;
 
-    res.status(201).json({
+    return res.status(201).json({
       token,
       user: safeUser,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Registration error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: "Email already registered",
+      });
+    }
+
+    return res.status(500).json({
       message: "Registration failed",
-      error: error.message,
     });
   }
 });
@@ -178,16 +234,29 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(400).json({
+      return res.status(401).json({
         message: "Invalid credentials",
       });
     }
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id.toString() },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -195,19 +264,20 @@ app.post("/api/auth/login", async (req, res) => {
     const safeUser = user.toObject();
     delete safeUser.password;
 
-    res.json({
+    return res.status(200).json({
       token,
       user: safeUser,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Login error:", error);
+
+    return res.status(500).json({
       message: "Login failed",
-      error: error.message,
     });
   }
 });
 
-// --- USER DASHBOARD ROUTES ---
+// ================= USER DASHBOARD ROUTES =================
 
 // 3. Get Logged-in User Profile
 app.get("/api/user/profile", auth, async (req, res) => {
@@ -220,10 +290,12 @@ app.get("/api/user/profile", auth, async (req, res) => {
       });
     }
 
-    res.json(user);
+    return res.json(user);
   } catch (error) {
-    res.status(500).json({
-      message: "Server error",
+    console.error("Get profile error:", error);
+
+    return res.status(500).json({
+      message: "Server error fetching profile",
     });
   }
 });
@@ -242,8 +314,18 @@ app.put("/api/user/profile", auth, async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { full_name, phone, age, gender, course, time_slot },
-      { new: true, runValidators: true }
+      {
+        full_name,
+        phone,
+        age,
+        gender,
+        course,
+        time_slot,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
     ).select("-password");
 
     if (!updatedUser) {
@@ -252,11 +334,12 @@ app.put("/api/user/profile", auth, async (req, res) => {
       });
     }
 
-    res.json(updatedUser);
+    return res.json(updatedUser);
   } catch (error) {
-    res.status(500).json({
+    console.error("Update profile error:", error);
+
+    return res.status(500).json({
       message: "Failed to update profile",
-      error: error.message,
     });
   }
 });
@@ -268,23 +351,28 @@ app.get("/api/users/list", auth, async (req, res) => {
       "full_name course time_slot"
     );
 
-    res.json(users);
+    return res.json(users);
   } catch (error) {
-    res.status(500).json({
+    console.error("User list error:", error);
+
+    return res.status(500).json({
       message: "Server error fetching user list",
     });
   }
 });
 
-// --- ADMIN ROUTES ---
+// ================= ADMIN USER ROUTES =================
 
 // 6. Get All Users
 app.get("/api/admin/users", auth, adminOnly, async (req, res) => {
   try {
     const users = await User.find().select("-password");
-    res.json(users);
+
+    return res.json(users);
   } catch (error) {
-    res.status(500).json({
+    console.error("Get all users error:", error);
+
+    return res.status(500).json({
       message: "Server error fetching all users",
     });
   }
@@ -293,6 +381,12 @@ app.get("/api/admin/users", auth, adminOnly, async (req, res) => {
 // 7. Update User
 app.put("/api/admin/users/:id", auth, adminOnly, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid user ID",
+      });
+    }
+
     const {
       full_name,
       email,
@@ -301,22 +395,27 @@ app.put("/api/admin/users/:id", auth, adminOnly, async (req, res) => {
       gender,
       course,
       time_slot,
-      role,
     } = req.body;
 
+    // Do not allow role changes through this endpoint.
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
         full_name,
-        email,
+        email:
+          typeof email === "string"
+            ? email.trim().toLowerCase()
+            : email,
         phone,
         age,
         gender,
         course,
         time_slot,
-        role,
       },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     ).select("-password");
 
     if (!updatedUser) {
@@ -325,11 +424,18 @@ app.put("/api/admin/users/:id", auth, adminOnly, async (req, res) => {
       });
     }
 
-    res.json(updatedUser);
+    return res.json(updatedUser);
   } catch (error) {
-    res.status(500).json({
+    console.error("Update user error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: "Email already registered",
+      });
+    }
+
+    return res.status(500).json({
       message: "Failed to update user",
-      error: error.message,
     });
   }
 });
@@ -337,6 +443,19 @@ app.put("/api/admin/users/:id", auth, adminOnly, async (req, res) => {
 // 8. Delete User
 app.delete("/api/admin/users/:id", auth, adminOnly, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid user ID",
+      });
+    }
+
+    // Prevent the logged-in admin from deleting their own account.
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({
+        message: "You cannot delete your own account",
+      });
+    }
+
     const deletedUser = await User.findByIdAndDelete(req.params.id);
 
     if (!deletedUser) {
@@ -345,30 +464,32 @@ app.delete("/api/admin/users/:id", auth, adminOnly, async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       message: "User deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Delete user error:", error);
+
+    return res.status(500).json({
       message: "Failed to delete user",
     });
   }
 });
 
-// --- ANNOUNCEMENT ROUTES ---
+// ================= ANNOUNCEMENT ROUTES =================
 
-// 9. Get Announcements (All logged-in users)
+// 9. Get Announcements (Logged-in users)
 app.get("/api/announcements", auth, async (req, res) => {
   try {
     const announcements = await Announcement.find()
       .sort({ createdAt: -1 })
       .lean();
 
-    res.status(200).json({ announcements });
+    return res.status(200).json({ announcements });
   } catch (error) {
     console.error("Fetch announcements error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to load announcements",
     });
   }
@@ -381,33 +502,79 @@ app.post(
   adminOnly,
   async (req, res) => {
     try {
-      const title = req.body.title?.trim();
-      const message = req.body.message?.trim();
+      const { title, message } = req.body;
 
-      if (!title || !message) {
+      if (
+        typeof title !== "string" ||
+        typeof message !== "string" ||
+        !title.trim() ||
+        !message.trim()
+      ) {
         return res.status(400).json({
           message: "Title and message are required",
         });
       }
 
       const announcement = await Announcement.create({
-        title,
-        message,
+        title: title.trim(),
+        message: message.trim(),
         createdBy: req.user.id,
       });
 
-      res.status(201).json({ announcement });
+      return res.status(201).json({ announcement });
     } catch (error) {
       console.error("Create announcement error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         message: "Failed to create announcement",
       });
     }
   }
 );
 
-// --- START SERVER ---
+// 11. Delete Announcement (Admin only)
+app.delete(
+  "/api/announcements/:id",
+  auth,
+  adminOnly,
+  async (req, res) => {
+    try {
+      if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({
+          message: "Invalid announcement ID",
+        });
+      }
+
+      const deletedAnnouncement =
+        await Announcement.findByIdAndDelete(req.params.id);
+
+      if (!deletedAnnouncement) {
+        return res.status(404).json({
+          message: "Announcement not found",
+        });
+      }
+
+      return res.status(200).json({
+        message: "Announcement deleted successfully",
+      });
+    } catch (error) {
+      console.error("Delete announcement error:", error);
+
+      return res.status(500).json({
+        message: "Failed to delete announcement",
+      });
+    }
+  }
+);
+
+// ================= HEALTH CHECK =================
+
+app.get("/", (req, res) => {
+  res.status(200).send("Easy Skill API is running");
+});
+
+// ================= START SERVER =================
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
