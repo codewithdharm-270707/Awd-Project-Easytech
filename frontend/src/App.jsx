@@ -12,6 +12,7 @@ import Login from './Form/Login';
 import Register from './Form/Register';   
 import Certificate from './Certificate/Certificate'; 
 import Dashboard from './Dashboard/Dashboard'; 
+import AddCourse from './Dashboard/AddCourse';
 import Footer from './Footer/Footer'; 
 
 function App() {
@@ -37,6 +38,9 @@ function App() {
 
           {/* 👈 નવો Dashboard Route ઉમેર્યો (Admin, User, My Account માટે) */}
           <Route path="/dashboard" element={<Dashboard />} />
+          {/* 👈 નવો AddCourse Route ઉમેર્યો (Admin માટે) */}
+          <Route path="/add-course" element={<AddCourse />} />
+
         </Routes>
 
         {/* Footer બધી જગ્યાએ નીચે દેખાશે */}

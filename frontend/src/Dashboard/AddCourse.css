@@ -1,0 +1,101 @@
+
+.add-course-page {
+  min-height: 100vh;
+  padding: 35px 20px;
+  background: #f4f7fb;
+  font-family: Arial, sans-serif;
+}
+
+.add-course-container {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 35px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+}
+
+.add-course-container h2 {
+  margin: 0 0 10px;
+  color: #123b5d;
+  font-size: 28px;
+}
+
+.add-course-container p {
+  margin-bottom: 28px;
+  color: #687586;
+  font-size: 15px;
+}
+
+.add-course-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-course-container label {
+  margin-top: 12px;
+  color: #263746;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.add-course-container input,
+.add-course-container select,
+.add-course-container textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d6dee8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #263746;
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.add-course-container input:focus,
+.add-course-container select:focus,
+.add-course-container textarea:focus {
+  border-color: #087f8c;
+  box-shadow: 0 0 0 3px rgba(8, 127, 140, 0.12);
+}
+
+.add-course-container textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.add-course-container form button {
+  margin-top: 25px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #087f8c;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.add-course-container form button:hover {
+  background: #066773;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+  .add-course-page {
+    padding: 20px 12px;
+  }
+
+  .add-course-container {
+    padding: 22px 16px;
+  }
+
+  .add-course-container h2 {
+    font-size: 23px;
+  }
+}

@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import './Course.css';
 
-// Courses Data Array
-const coursesList = [
+const defaultCourses = [
   {
     id: 'frontend',
     title: 'Frontend Development',
@@ -112,21 +111,76 @@ const coursesList = [
 ];
 
 const Course = () => {
-  // Read search parameters from URL
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
 
-  // Filter courses by title or description
-  const filteredCourses = coursesList.filter(
-    (course) =>
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const [courses, setCourses] = useState(defaultCourses);
+
+  useEffect(() => {
+    const loadCourses = () => {
+      try {
+        const savedCourses = JSON.parse(
+          localStorage.getItem('academyCourses') || '[]'
+        );
+
+        const formattedCourses = savedCourses.map(course => ({
+          id: String(course.id),
+          title: course.courseName || course.title || 'Untitled Course',
+          description:
+            course.description || 'Explore this course at EasyTech.',
+          category: (course.category || 'other')
+            .toLowerCase()
+            .replace(/\s+/g, ''),
+          image: course.image || 'images/frontend.jpg',
+          duration: course.duration || '',
+          fees: course.fees || '',
+          level: course.level || 'Beginner to Intermediate',
+          syllabus: course.syllabus || [],
+          tools: course.tools || [],
+          projects: course.projects || [],
+          features: course.features || [],
+          careerOpportunities: course.careerOpportunities || [],
+          certification: course.certification || '',
+          placementSupport: course.placementSupport || '',
+        }));
+
+        const defaultIds = new Set(defaultCourses.map(course => course.id));
+
+        const additionalCourses = formattedCourses.filter(
+          course => !defaultIds.has(course.id)
+        );
+
+        setCourses([...defaultCourses, ...additionalCourses]);
+      } catch (error) {
+        console.error('Unable to load saved courses:', error);
+        setCourses(defaultCourses);
+      }
+    };
+
+    loadCourses();
+
+    window.addEventListener('storage', loadCourses);
+
+    return () => {
+      window.removeEventListener('storage', loadCourses);
+    };
+  }, []);
+
+  const filteredCourses = courses.filter(course => {
+    const query = searchQuery.toLowerCase();
+
+    return (
+      course.title.toLowerCase().includes(query) ||
+      course.description.toLowerCase().includes(query) ||
+      course.category.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <main>
       <div className="course-page">
-        {/* HERO SECTION */}
+
+        {/* Hero Section */}
         <section className="hero">
           <div className="container">
             <h1 className="hero-title">Our Courses</h1>
@@ -136,33 +190,64 @@ const Course = () => {
           </div>
         </section>
 
-        {/* COURSES / SERVICES SECTION */}
+        {/* Courses Section */}
         <section className="services">
           <div className="container">
             <div className="services-grid">
               {filteredCourses.length > 0 ? (
-                filteredCourses.map((course) => (
-                  <div key={course.id} className="service-card" data-category={course.category}>
+                filteredCourses.map(course => (
+                  <div
+                    key={course.id}
+                    className="service-card"
+                    data-category={course.category}
+                  >
                     <div className="card-image">
-                      <img src={course.image} alt={course.title} />
+                      <img
+                        src={course.image}
+                        alt={course.title}
+                        onError={e => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = 'images/frontend.jpg';
+                        }}
+                      />
                     </div>
+
                     <div className="card-content">
                       <h3 className="card-title">{course.title}</h3>
-                      <p className="card-description">{course.description}</p>
-                      <Link to={`/course/${course.id}`} className="view-btn">
+
+                      <p className="card-description">
+                        {course.description}
+                      </p>
+
+                      <Link
+                        to={`/course/${encodeURIComponent(course.id)}`}
+                        className="view-btn"
+                      >
                         View Details
                       </Link>
                     </div>
                   </div>
                 ))
               ) : (
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 0' }}>
+                <div
+                  style={{
+                    gridColumn: '1 / -1',
+                    textAlign: 'center',
+                    padding: '40px 0',
+                  }}
+                >
                   <h3>No courses found matching "{searchQuery}"</h3>
                   <p>Try searching for another topic or technology.</p>
+
                   <button
                     onClick={() => setSearchParams({})}
                     className="view-btn"
-                    style={{ marginTop: '15px', display: 'inline-block', border: 'none', cursor: 'pointer' }}
+                    style={{
+                      marginTop: '15px',
+                      display: 'inline-block',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
                   >
                     View All Courses
                   </button>
@@ -172,81 +257,74 @@ const Course = () => {
           </div>
         </section>
 
-        {/* TEACHERS SECTION */}
+        {/* Teachers Section */}
         <section className="teachers-section">
           <div className="container">
             <h2 className="section-title">Meet Our Expert Teachers</h2>
-            <p className="section-subtitle">Learn from experienced industry professionals</p>
+            <p className="section-subtitle">
+              Learn from experienced industry professionals
+            </p>
 
             <div className="teachers-grid">
-              <div className="teacher-card">
-                <div className="teacher-img">
-                  <img src="images/t1.jpg" alt="Rajesh Patel" />
-                </div>
-                <div className="teacher-info">
-                  <h3>Rajesh Patel</h3>
-                  <span className="subject">Web Development</span>
-                  <p>10+ years of experience in Full Stack Web Technologies.</p>
-                  <div className="social-links">
-                    <a href="#linkedin"><i className="fa-brands fa-linkedin-in"></i></a>
-                    <a href="#github"><i className="fa-brands fa-github"></i></a>
-                    <a href="#facebook"><i className="fa-brands fa-facebook"></i></a>
+              {[
+                {
+                  name: 'Rajesh Patel',
+                  subject: 'Web Development',
+                  description:
+                    '10+ years of experience in Full Stack Web Technologies.',
+                  image: 'images/t1.jpg',
+                },
+                {
+                  name: 'Pooja Shah',
+                  subject: 'UI/UX Design',
+                  description:
+                    'Specialized in modern interface design & user research.',
+                  image: 'images/t2.jpg',
+                },
+                {
+                  name: 'Amit Sharma',
+                  subject: 'Data Analytics',
+                  description:
+                    'Data Scientist with expertise in Python & SQL.',
+                  image: 'images/t3.jpg',
+                },
+                {
+                  name: 'Neha Joshi',
+                  subject: 'Python & Cyber Security',
+                  description:
+                    'Certified Ethical Hacker & Lead Security Consultant.',
+                  image: 'images/t4.jpg',
+                },
+              ].map(teacher => (
+                <div className="teacher-card" key={teacher.name}>
+                  <div className="teacher-img">
+                    <img src={teacher.image} alt={teacher.name} />
                   </div>
-                </div>
-              </div>
 
-              <div className="teacher-card">
-                <div className="teacher-img">
-                  <img src="images/t2.jpg" alt="Pooja Shah" />
-                </div>
-                <div className="teacher-info">
-                  <h3>Pooja Shah</h3>
-                  <span className="subject">UI/UX Design</span>
-                  <p>Specialized in modern interface design & user research.</p>
-                  <div className="social-links">
-                    <a href="#linkedin"><i className="fa-brands fa-linkedin-in"></i></a>
-                    <a href="#github"><i className="fa-brands fa-github"></i></a>
-                    <a href="#facebook"><i className="fa-brands fa-facebook"></i></a>
-                  </div>
-                </div>
-              </div>
+                  <div className="teacher-info">
+                    <h3>{teacher.name}</h3>
+                    <span className="subject">{teacher.subject}</span>
+                    <p>{teacher.description}</p>
 
-              <div className="teacher-card">
-                <div className="teacher-img">
-                  <img src="images/t3.jpg" alt="Amit Sharma" />
-                </div>
-                <div className="teacher-info">
-                  <h3>Amit Sharma</h3>
-                  <span className="subject">Data Analytics</span>
-                  <p>Data Scientist with expertise in Python & SQL.</p>
-                  <div className="social-links">
-                    <a href="#linkedin"><i className="fa-brands fa-linkedin-in"></i></a>
-                    <a href="#github"><i className="fa-brands fa-github"></i></a>
-                    <a href="#facebook"><i className="fa-brands fa-facebook"></i></a>
+                    <div className="social-links">
+                      <a href="#linkedin" aria-label="LinkedIn">
+                        <i className="fa-brands fa-linkedin-in"></i>
+                      </a>
+                      <a href="#github" aria-label="GitHub">
+                        <i className="fa-brands fa-github"></i>
+                      </a>
+                      <a href="#facebook" aria-label="Facebook">
+                        <i className="fa-brands fa-facebook"></i>
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="teacher-card">
-                <div className="teacher-img">
-                  <img src="images/t4.jpg" alt="Neha Joshi" />
-                </div>
-                <div className="teacher-info">
-                  <h3>Neha Joshi</h3>
-                  <span className="subject">Python & Cyber Security</span>
-                  <p>Certified Ethical Hacker & Lead Security Consultant.</p>
-                  <div className="social-links">
-                    <a href="#linkedin"><i className="fa-brands fa-linkedin-in"></i></a>
-                    <a href="#github"><i className="fa-brands fa-github"></i></a>
-                    <a href="#facebook"><i className="fa-brands fa-facebook"></i></a>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* STATS SECTION */}
+        {/* Stats Section */}
         <section className="stats-section">
           <div className="container">
             <h2 className="stats-title">Our Achievements in Numbers</h2>
@@ -260,7 +338,7 @@ const Course = () => {
 
               <div className="stat-box">
                 <i className="fa-solid fa-laptop-code"></i>
-                <h3>12+</h3>
+                <h3>{courses.length}+</h3>
                 <p>Courses Available</p>
               </div>
 
@@ -278,93 +356,77 @@ const Course = () => {
             </div>
 
             <div className="badges">
-              <span><i className="fa-solid fa-check-circle"></i> ISO Certified</span>
-              <span><i className="fa-solid fa-star"></i> 4.9 Star Rating</span>
-              <span><i className="fa-solid fa-shield-halved"></i> 100% Practical Training</span>
+              <span>
+                <i className="fa-solid fa-check-circle"></i> ISO Certified
+              </span>
+              <span>
+                <i className="fa-solid fa-star"></i> 4.9 Star Rating
+              </span>
+              <span>
+                <i className="fa-solid fa-shield-halved"></i> 100% Practical Training
+              </span>
             </div>
           </div>
         </section>
 
-        {/* REVIEWS SECTION */}
+        {/* Reviews Section */}
         <section className="reviews-section">
           <div className="container">
             <h2 className="review-title">What Our Students Say</h2>
 
             <div className="reviews-grid">
-              <div className="review-card">
-                <div className="stars">
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                </div>
-                <p>"The Web Development course was awesome! Very practical and easy to understand."</p>
-                <div className="user">
-                  <img src="images/r1.jpg" alt="Rahul Sharma" />
-                  <div>
-                    <span className="name">Rahul Sharma</span>
-                    <span className="role">Student</span>
+              {[
+                {
+                  name: 'Rahul Sharma',
+                  image: 'images/r1.jpg',
+                  review:
+                    'The Web Development course was awesome! Very practical and easy to understand.',
+                  stars: 5,
+                },
+                {
+                  name: 'Priya Patel',
+                  image: 'images/r2.jpg',
+                  review:
+                    'Best learning experience! The projects helped me build a great portfolio.',
+                  stars: 4,
+                },
+                {
+                  name: 'Aman Mehta',
+                  image: 'images/r3.jpg',
+                  review:
+                    'Great content and well-structured modules. Highly recommended for beginners.',
+                  stars: 4,
+                },
+                {
+                  name: 'Sneha Roy',
+                  image: 'images/r4.jpg',
+                  review:
+                    'Clear explanations and hands-on practice. Loved the overall course layout!',
+                  stars: 5,
+                },
+              ].map(student => (
+                <div className="review-card" key={student.name}>
+                  <div className="stars">
+                    {Array.from({ length: student.stars }).map((_, index) => (
+                      <i key={index} className="fa-solid fa-star"></i>
+                    ))}
                   </div>
-                </div>
-              </div>
 
-              <div className="review-card">
-                <div className="stars">
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star-half-stroke"></i>
-                </div>
-                <p>"Best learning experience! The projects helped me build a great portfolio."</p>
-                <div className="user">
-                  <img src="images/r2.jpg" alt="Priya Patel" />
-                  <div>
-                    <span className="name">Priya Patel</span>
-                    <span className="role">Student</span>
-                  </div>
-                </div>
-              </div>
+                  <p>"{student.review}"</p>
 
-              <div className="review-card">
-                <div className="stars">
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-regular fa-star"></i>
-                </div>
-                <p>"Great content and well-structured modules. Highly recommended for beginners."</p>
-                <div className="user">
-                  <img src="images/r3.jpg" alt="Aman Mehta" />
-                  <div>
-                    <span className="name">Aman Mehta</span>
-                    <span className="role">Student</span>
+                  <div className="user">
+                    <img src={student.image} alt={student.name} />
+                    <div>
+                      <span className="name">{student.name}</span>
+                      <span className="role">Student</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="review-card">
-                <div className="stars">
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                </div>
-                <p>"Clear explanations and hands-on practice. Loved the overall course layout!"</p>
-                <div className="user">
-                  <img src="images/r4.jpg" alt="Sneha Roy" />
-                  <div>
-                    <span className="name">Sneha Roy</span>
-                    <span className="role">Student</span>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
+
       </div>
     </main>
   );

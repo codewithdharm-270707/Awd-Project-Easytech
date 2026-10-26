@@ -1,6 +1,95 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import './Dashboard.css';
+
+const DEFAULT_COURSES = [
+  'Frontend Development',
+  'Backend Development',
+  'Full Stack Development',
+  'React JS',
+  'Node JS',
+  'PHP & MySQL',
+  'Python Programming',
+  'Java Programming',
+  'UI/UX Design',
+  'Graphic Design',
+  'Logo Design',
+  'Android Development',
+  'iOS Development',
+  'Data Science',
+  'Data Analytics',
+];
+
+const API_URL = 'https://awd-project-easytech.onrender.com';
+
+const getAcademyCourses = () => {
+  try {
+    const savedCourses = JSON.parse(
+      localStorage.getItem('academyCourses') || '[]'
+    );
+
+    const savedDeletedCourses = JSON.parse(
+      localStorage.getItem('academyDeletedCourses') || '[]'
+    );
+
+    const customCourses = Array.isArray(savedCourses)
+      ? savedCourses
+      : [];
+
+    const deletedCourses = Array.isArray(savedDeletedCourses)
+      ? savedDeletedCourses
+      : [];
+
+    const deletedNames = new Set(
+      deletedCourses.map(course =>
+        String(course).trim().toLowerCase()
+      )
+    );
+
+    const customCourseNames = customCourses
+      .map(course =>
+        String(course?.courseName || course?.title || '').trim()
+      )
+      .filter(Boolean);
+
+    const allCourses = [
+      ...new Set([...DEFAULT_COURSES, ...customCourseNames]),
+    ];
+
+    return allCourses.filter(
+      course => !deletedNames.has(course.trim().toLowerCase())
+    );
+  } catch (error) {
+    console.error('Course loading error:', error);
+    return DEFAULT_COURSES;
+  }
+};
+
+const getCourseCategory = course => {
+  const name = course.toLowerCase();
+
+  if (name.includes('design') || name.includes('logo')) {
+    return 'Design';
+  }
+
+  if (
+    name.includes('android') ||
+    name.includes('ios') ||
+    name.includes('app')
+  ) {
+    return 'App Development';
+  }
+
+  if (
+    name.includes('data science') ||
+    name.includes('data analytics')
+  ) {
+    return 'Data & Analytics';
+  }
+
+  return 'Development & Programming';
+};
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
@@ -9,101 +98,462 @@ const Dashboard = () => {
 
   const [accountData, setAccountData] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
-  const [publicUsers, setPublicUsers] = useState([]);
-  const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [adminSearch, setAdminSearch] = useState('');
   const [editingUser, setEditingUser] = useState(null);
 
-  const token = localStorage.getItem('token');
+  const [academyCourses, setAcademyCourses] = useState(
+    getAcademyCourses
+  );
 
+  const [announcements, setAnnouncements] = useState([]);
+  const [newTitle, setNewTitle] = useState('');
+  const [newNote, setNewNote] = useState('');
+  const [isPostingNote, setIsPostingNote] = useState(false);
+  const [announcementError, setAnnouncementError] = useState('');
+
+  const token = localStorage.getItem('token');
+  const isAdmin = accountData?.role === 'admin';
+
+  const getHeaders = (includeJson = false) => {
+    const headers = {
+      Authorization: `Bearer ${token || ''}`,
+    };
+
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    return headers;
+  };
+
+  // Refresh course list when localStorage changes.
+  useEffect(() => {
+    const refreshCourses = () => {
+      setAcademyCourses(getAcademyCourses());
+    };
+
+    window.addEventListener('focus', refreshCourses);
+    window.addEventListener('storage', refreshCourses);
+    window.addEventListener('academyCoursesUpdated', refreshCourses);
+
+    return () => {
+      window.removeEventListener('focus', refreshCourses);
+      window.removeEventListener('storage', refreshCourses);
+      window.removeEventListener(
+        'academyCoursesUpdated',
+        refreshCourses
+      );
+    };
+  }, []);
+
+  // 1. Fetch profile.
   useEffect(() => {
     if (!token) {
-      navigate('/login'); 
+      navigate('/login');
       return;
     }
 
-    // Fetch User Profile
-    fetch('https://awd-project-easytech.onrender.com/api/user/profile', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setAccountData(data))
-      .catch(err => console.error(err));
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/user/profile`, {
+          headers: getHeaders(),
+        });
 
-    // Fetch Public Users List
-    if (activeTab === 'users') {
-      fetch('https://awd-project-easytech.onrender.com/api/users/list', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => Array.isArray(data) && setPublicUsers(data))
-        .catch(err => console.error(err));
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
+            return;
+          }
+
+          throw new Error('Profile fetch failed');
+        }
+
+        const data = await res.json();
+        setAccountData(data);
+      } catch (error) {
+        console.error('Profile error:', error);
+      }
+    };
+
+    fetchProfile();
+  }, [token, navigate]);
+
+  // 2. Restrict tabs by role.
+  useEffect(() => {
+    if (!accountData) return;
+
+    if (accountData.role === 'admin') {
+      const allowedTabs = ['admin', 'courses', 'announcements'];
+
+      if (!allowedTabs.includes(activeTab)) {
+        navigate('/dashboard?tab=admin', { replace: true });
+      }
+    } else {
+      const allowedTabs = ['account', 'announcements'];
+
+      if (!allowedTabs.includes(activeTab)) {
+        navigate('/dashboard?tab=account', { replace: true });
+      }
+    }
+  }, [accountData, activeTab, navigate]);
+
+  // 3. Fetch admin users.
+  useEffect(() => {
+    if (
+      !['admin', 'courses', 'announcements'].includes(activeTab) ||
+      !isAdmin ||
+      !token
+    ) {
+      return;
     }
 
-    // Fetch Admin All Users
-    if (activeTab === 'admin') {
-      fetch('https://awd-project-easytech.onrender.com/api/admin/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => Array.isArray(data) && setAllUsers(data))
-        .catch(err => console.error(err));
-    }
-  }, [activeTab, token, navigate]);
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/admin/users`, {
+          headers: getHeaders(),
+        });
 
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || 'Admin users fetch failed');
+        }
+
+        setAllUsers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Admin users error:', error);
+      }
+    };
+
+    fetchUsers();
+  }, [activeTab, isAdmin, token]);
+
+  // 4. Fetch announcements for logged-in users.
+  useEffect(() => {
+    if (
+      activeTab !== 'announcements' ||
+      !token ||
+      !accountData
+    ) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchAnnouncements = async () => {
+      setAnnouncementError('');
+
+      try {
+        const res = await fetch(`${API_URL}/api/announcements`, {
+          method: 'GET',
+          headers: getHeaders(),
+          signal: controller.signal,
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(
+            data.message ||
+              `Announcement request failed (${res.status})`
+          );
+        }
+
+        const list = Array.isArray(data.announcements)
+          ? data.announcements
+          : Array.isArray(data)
+          ? data
+          : [];
+
+        setAnnouncements(list);
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+
+        console.error('Announcements error:', error);
+        setAnnouncementError(error.message);
+      }
+    };
+
+    fetchAnnouncements();
+
+    return () => controller.abort();
+  }, [activeTab, token, accountData]);
+
+  // 5. Filter students.
+  const filteredUsers = useMemo(() => {
+    const query = adminSearch.trim().toLowerCase();
+
+    if (!query) return allUsers;
+
+    return allUsers.filter(
+      user =>
+        (user.full_name || '').toLowerCase().includes(query) ||
+        (user.course || '').toLowerCase().includes(query) ||
+        (user.email || '').toLowerCase().includes(query)
+    );
+  }, [allUsers, adminSearch]);
+
+  const matchingCourseCount = useMemo(() => {
+    const query = adminSearch.trim().toLowerCase();
+
+    if (!query) return null;
+
+    const matchingCourse = academyCourses.find(
+      course => course.toLowerCase() === query
+    );
+
+    if (!matchingCourse) return null;
+
+    return allUsers.filter(
+      user =>
+        (user.course || '').trim().toLowerCase() ===
+        matchingCourse.toLowerCase()
+    ).length;
+  }, [allUsers, adminSearch, academyCourses]);
+
+  // 6. Logout.
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
   };
 
-  const handleAccountUpdate = async (e) => {
+  // 7. Post announcement - ADMIN ONLY.
+  const handlePostAnnouncement = async e => {
     e.preventDefault();
-    const res = await fetch('https://awd-project-easytech.onrender.com/api/user/profile', {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}` 
-      },
-      body: JSON.stringify(accountData)
-    });
-    if (res.ok) {
-      alert('Account updated successfully!');
-      setIsEditingAccount(false);
+
+    if (!isAdmin) return;
+
+    if (!newTitle.trim() || !newNote.trim()) {
+      setAnnouncementError('Please enter both title and message.');
+      return;
+    }
+
+    if (!token) {
+      setAnnouncementError('Please log in again.');
+      return;
+    }
+
+    setIsPostingNote(true);
+    setAnnouncementError('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/announcements`, {
+        method: 'POST',
+        headers: getHeaders(true),
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          message: newNote.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.message ||
+            `Announcement publish failed (${res.status})`
+        );
+      }
+
+      const createdAnnouncement = data.announcement || data;
+
+      setAnnouncements(prev => [createdAnnouncement, ...prev]);
+      setNewTitle('');
+      setNewNote('');
+
+      alert('Announcement published successfully!');
+    } catch (error) {
+      console.error('Post announcement error:', error);
+      setAnnouncementError(
+        error.message || 'Unable to post announcement.'
+      );
+    } finally {
+      setIsPostingNote(false);
     }
   };
 
-  const handleAdminUserUpdate = async (e) => {
-    e.preventDefault();
-    const res = await fetch(`https://awd-project-easytech.onrender.com/api/admin/users/${editingUser._id}`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}` 
-      },
-      body: JSON.stringify(editingUser)
-    });
+  // 8. Delete announcement - ADMIN ONLY.
+  const handleDeleteAnnouncement = async id => {
+    // Extra protection: only admin can call this handler.
+    if (!isAdmin || !id) return;
 
-    if (res.ok) {
-      const updated = await res.json();
-      setAllUsers(allUsers.map(u => u._id === updated._id ? updated : u));
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this announcement?'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/announcements/${id}`,
+        {
+          method: 'DELETE',
+          headers: getHeaders(),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.message || 'Announcement delete failed'
+        );
+      }
+
+      setAnnouncements(prev =>
+        prev.filter(note => note._id !== id)
+      );
+
+      alert('Announcement deleted successfully!');
+    } catch (error) {
+      console.error('Delete announcement error:', error);
+      alert(error.message || 'Unable to delete announcement.');
+    }
+  };
+
+  // 9. Update student.
+  const handleAdminUserUpdate = async e => {
+    e.preventDefault();
+
+    if (!isAdmin || !editingUser) return;
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/admin/users/${editingUser._id}`,
+        {
+          method: 'PUT',
+          headers: getHeaders(true),
+          body: JSON.stringify(editingUser),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'User update failed');
+      }
+
+      setAllUsers(prev =>
+        prev.map(user => (user._id === data._id ? data : user))
+      );
+
       setEditingUser(null);
+      alert('Student updated successfully!');
+    } catch (error) {
+      console.error('Update user error:', error);
+      alert(error.message || 'Unable to update student.');
     }
   };
 
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
-    const res = await fetch(`https://awd-project-easytech.onrender.com/api/admin/users/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) {
-      setAllUsers(allUsers.filter(u => u._id !== id));
+  // 10. Delete student.
+  const handleDeleteUser = async id => {
+    if (!isAdmin || !id) return;
+
+    if (!window.confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Delete failed');
+      }
+
+      setAllUsers(prev => prev.filter(user => user._id !== id));
+      alert('Student deleted successfully!');
+    } catch (error) {
+      console.error('Delete user error:', error);
+      alert(error.message || 'Unable to delete student.');
+    }
+  };
+
+  // 11. Delete course.
+  const handleDeleteCourse = courseName => {
+    if (!isAdmin) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${courseName}"?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const savedCourses = JSON.parse(
+        localStorage.getItem('academyCourses') || '[]'
+      );
+
+      const savedDeletedCourses = JSON.parse(
+        localStorage.getItem('academyDeletedCourses') || '[]'
+      );
+
+      const customCourses = Array.isArray(savedCourses)
+        ? savedCourses
+        : [];
+
+      const deletedCourses = Array.isArray(savedDeletedCourses)
+        ? savedDeletedCourses
+        : [];
+
+      const normalizedName = courseName.trim().toLowerCase();
+
+      const isDefaultCourse = DEFAULT_COURSES.some(
+        course => course.trim().toLowerCase() === normalizedName
+      );
+
+      if (isDefaultCourse) {
+        const alreadyDeleted = deletedCourses.some(
+          course =>
+            String(course).trim().toLowerCase() === normalizedName
+        );
+
+        if (!alreadyDeleted) {
+          deletedCourses.push(courseName);
+        }
+
+        localStorage.setItem(
+          'academyDeletedCourses',
+          JSON.stringify(deletedCourses)
+        );
+      } else {
+        const updatedCustomCourses = customCourses.filter(course => {
+          const name = String(
+            course?.courseName || course?.title || ''
+          )
+            .trim()
+            .toLowerCase();
+
+          return name !== normalizedName;
+        });
+
+        localStorage.setItem(
+          'academyCourses',
+          JSON.stringify(updatedCustomCourses)
+        );
+      }
+
+      setAcademyCourses(getAcademyCourses());
+      window.dispatchEvent(new Event('academyCoursesUpdated'));
+
+      alert('Course deleted successfully!');
+    } catch (error) {
+      console.error('Delete course error:', error);
+      alert('Unable to delete course.');
     }
   };
 
   return (
     <div className="layout-wrapper">
-      {/* --- LEFT SIDEBAR --- */}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <i className="fa-solid fa-graduation-cap brand-icon"></i>
@@ -111,22 +561,61 @@ const Dashboard = () => {
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/dashboard?tab=account" className={`nav-item ${activeTab === 'account' ? 'active' : ''}`}>
-            <i className="fa-regular fa-user"></i>
-            <span>My Account</span>
-          </Link>
+          {isAdmin ? (
+            <>
+              <Link
+                to="/dashboard?tab=admin"
+                className={`nav-item ${
+                  activeTab === 'admin' ? 'active' : ''
+                }`}
+              >
+                <i className="fa-solid fa-user-shield"></i>
+                <span>Admin Panel</span>
+              </Link>
 
-          <Link to="/dashboard?tab=users" className={`nav-item ${activeTab === 'users' ? 'active' : ''}`}>
-            <i className="fa-solid fa-users"></i>
-            <span>Users</span>
-          </Link>
+              <Link
+                to="/dashboard?tab=courses"
+                className={`nav-item ${
+                  activeTab === 'courses' ? 'active' : ''
+                }`}
+              >
+                <i className="fa-solid fa-book-open"></i>
+                <span>Courses</span>
+              </Link>
 
-          {accountData?.role === 'admin' && (
-            <Link to="/dashboard?tab=admin" className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}>
-              <i className="fa-solid fa-user-shield"></i>
-              <span>Admin Panel</span>
-            </Link>
-          )}
+              <Link
+                to="/dashboard?tab=announcements"
+                className={`nav-item ${
+                  activeTab === 'announcements' ? 'active' : ''
+                }`}
+              >
+                <i className="fa-solid fa-bullhorn"></i>
+                <span>Announcements</span>
+              </Link>
+            </>
+          ) : accountData ? (
+            <>
+              <Link
+                to="/dashboard?tab=account"
+                className={`nav-item ${
+                  activeTab === 'account' ? 'active' : ''
+                }`}
+              >
+                <i className="fa-regular fa-user"></i>
+                <span>My Account</span>
+              </Link>
+
+              <Link
+                to="/dashboard?tab=announcements"
+                className={`nav-item ${
+                  activeTab === 'announcements' ? 'active' : ''
+                }`}
+              >
+                <i className="fa-solid fa-bullhorn"></i>
+                <span>Announcements</span>
+              </Link>
+            </>
+          ) : null}
         </nav>
 
         <button onClick={handleLogout} className="logout-btn">
@@ -135,183 +624,248 @@ const Dashboard = () => {
         </button>
       </aside>
 
-      {/* --- MAIN CONTENT AREA --- */}
       <main className="main-viewport">
-        {/* TOP WELCOME HEADER */}
         <header className="top-banner">
-          <h1 className="welcome-heading">Welcome, {accountData?.full_name || 'User'}</h1>
+          <h1 className="welcome-heading">
+            Welcome, {accountData?.full_name || 'User'}
+          </h1>
+
           <div className="role-pill">
             <i className="fa-solid fa-user-tie"></i>
-            <span>Role: {accountData?.role?.toUpperCase() || 'USER'}</span>
+            <span>
+              Role: {accountData?.role?.toUpperCase() || 'USER'}
+            </span>
           </div>
         </header>
 
-        {/* 1. MY ACCOUNT PANEL */}
-        {activeTab === 'account' && accountData && (
-          <div className="premium-card">
-            <div className="card-header">
-              <h2><i className="fa-solid fa-id-card"></i> Personal Information</h2>
-            </div>
-
-            {!isEditingAccount ? (
-              <div className="profile-grid">
-                <div className="info-box">
-                  <label>Full Name</label>
-                  <p>{accountData.full_name}</p>
-                </div>
-                <div className="info-box">
-                  <label>Email Address</label>
-                  <p>{accountData.email}</p>
-                </div>
-                <div className="info-box">
-                  <label>Phone Number</label>
-                  <p>{accountData.phone || 'N/A'}</p>
-                </div>
-                <div className="info-box">
-                  <label>Age</label>
-                  <p>{accountData.age || 'N/A'}</p>
-                </div>
-                <div className="info-box">
-                  <label>Gender</label>
-                  <p>{accountData.gender || 'N/A'}</p>
-                </div>
-                <div className="info-box">
-                  <label>Enrolled Course</label>
-                  <p>{accountData.course || 'N/A'}</p>
-                </div>
-                <div className="info-box">
-                  <label>Time Slot</label>
-                  <p>{accountData.time_slot || 'N/A'}</p>
-                </div>
-
-                <div className="full-width-actions">
-                  <button className="btn-primary" onClick={() => setIsEditingAccount(true)}>
-                    <i className="fa-solid fa-pen-to-square"></i> Edit Profile
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleAccountUpdate} className="modern-form compact-form">
-                <div className="form-grid-2col">
-                  <div className="form-group">
-                    <label>Full Name</label>
-                    <input 
-                      type="text" 
-                      value={accountData.full_name || ''} 
-                      onChange={e => setAccountData({...accountData, full_name: e.target.value})} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Phone Number</label>
-                    <input 
-                      type="text" 
-                      value={accountData.phone || ''} 
-                      onChange={e => setAccountData({...accountData, phone: e.target.value})} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Age</label>
-                    <input 
-                      type="number" 
-                      value={accountData.age || ''} 
-                      onChange={e => setAccountData({...accountData, age: e.target.value})} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Gender</label>
-                    <select 
-                      value={accountData.gender || ''} 
-                      onChange={e => setAccountData({...accountData, gender: e.target.value})}
-                    >
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Course</label>
-                    <select 
-                      value={accountData.course || ''} 
-                      onChange={e => setAccountData({...accountData, course: e.target.value})}
-                    >
-                      <option value="Data Science">Data Science</option>
-                      <option value="Data Analytics">Data Analytics</option>
-                      <option value="Web Designing">Web Designing</option>
-                      <option value="Software Development">Software Development</option>
-                      <option value="Full Stack Development">Full Stack Development</option>
-                      <option value="Graphic Designing">Graphic Designing</option>
-                      <option value="Cyber Security">Cyber Security</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Time Slot</label>
-                    <select 
-                      value={accountData.time_slot || ''} 
-                      onChange={e => setAccountData({...accountData, time_slot: e.target.value})}
-                    >
-                      <option value="Morning">Morning</option>
-                      <option value="Evening">Evening</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-actions align-right">
-                  <button type="submit" className="btn-primary">Save Changes</button>
-                  <button type="button" className="btn-secondary" onClick={() => setIsEditingAccount(false)}>Cancel</button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* 2. USER PANEL */}
-        {activeTab === 'users' && (
+        {/* USER ACCOUNT */}
+        {activeTab === 'account' && accountData && !isAdmin && (
           <div className="premium-card">
             <div className="card-header">
               <div>
-                <h2><i className="fa-solid fa-users"></i> Registered Students</h2>
-                <p className="subtitle">List of all students enrolled in Easy Skill:</p>
+                <h2>
+                  <i className="fa-solid fa-id-card"></i> Personal
+                  Information
+                </h2>
+                <p className="subtitle">Your account details.</p>
               </div>
             </div>
 
-            <table className="modern-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Course</th>
-                  <th>Time Slot</th>
-                </tr>
-              </thead>
-              <tbody>
-                {publicUsers.map((user, index) => (
-                  <tr key={user._id || index}>
-                    <td className="row-id">#{index + 1}</td>
-                    <td className="font-semibold">{user.full_name}</td>
-                    <td>{user.course || 'N/A'}</td>
-                    <td>{user.time_slot || 'N/A'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="profile-grid">
+              <div className="info-box">
+                <label>Full Name</label>
+                <p>{accountData.full_name}</p>
+              </div>
+
+              <div className="info-box">
+                <label>Email Address</label>
+                <p>{accountData.email}</p>
+              </div>
+
+              <div className="info-box">
+                <label>Phone Number</label>
+                <p>{accountData.phone || 'N/A'}</p>
+              </div>
+
+              <div className="info-box">
+                <label>Age</label>
+                <p>{accountData.age || 'N/A'}</p>
+              </div>
+
+              <div className="info-box">
+                <label>Gender</label>
+                <p>{accountData.gender || 'N/A'}</p>
+              </div>
+
+              <div className="info-box">
+                <label>Enrolled Course</label>
+                <p>{accountData.course || 'N/A'}</p>
+              </div>
+
+              <div className="info-box">
+                <label>Time Slot</label>
+                <p>{accountData.time_slot || 'N/A'}</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* 3. ADMIN PANEL */}
-        {activeTab === 'admin' && (
+        {/* ANNOUNCEMENTS */}
+        {activeTab === 'announcements' && (
+          <div className="premium-card">
+            <div className="card-header">
+              <div>
+                <h2>
+                  <i className="fa-solid fa-bullhorn"></i> Announcements
+                </h2>
+
+                <p className="subtitle">
+                  {isAdmin
+                    ? 'Post important notes for all students.'
+                    : 'Latest notes from the academy admin.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Only ADMIN can post announcements */}
+            {isAdmin && (
+              <form
+                onSubmit={handlePostAnnouncement}
+                className="modern-form"
+                style={{ marginBottom: '22px' }}
+              >
+                <div className="form-group">
+                  <label>Announcement Title</label>
+                  <input
+                    type="text"
+                    value={newTitle}
+                    onChange={e => setNewTitle(e.target.value)}
+                    placeholder="e.g. Holiday Notice / Exam Schedule"
+                    required
+                  />
+                </div>
+
+                <div
+                  className="form-group"
+                  style={{ marginTop: '14px' }}
+                >
+                  <label>Announcement Message</label>
+                  <textarea
+                    value={newNote}
+                    onChange={e => setNewNote(e.target.value)}
+                    placeholder="Write a note for all students..."
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                {announcementError && (
+                  <p
+                    role="alert"
+                    style={{ color: '#dc2626', marginTop: 12 }}
+                  >
+                    {announcementError}
+                  </p>
+                )}
+
+                <div className="form-actions align-right">
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={
+                      isPostingNote ||
+                      !newTitle.trim() ||
+                      !newNote.trim()
+                    }
+                  >
+                    <i className="fa-solid fa-paper-plane"></i>{' '}
+                    {isPostingNote ? 'Posting...' : 'Post Announcement'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="announcements-list">
+              {announcementError && announcements.length === 0 ? (
+                <p className="subtitle">
+                  Unable to load announcements: {announcementError}
+                </p>
+              ) : announcements.length === 0 ? (
+                <p className="subtitle">No announcements yet.</p>
+              ) : (
+                announcements.map((note, index) => (
+                  <div
+                    key={note._id || index}
+                    className="announcement-item"
+                    style={{
+                      background: '#f8f9fe',
+                      border: '1px solid var(--border)',
+                      borderLeft: '4px solid #ef4444',
+                      borderRadius: '10px',
+                      padding: '16px 18px',
+                      marginBottom: '14px',
+                    }}
+                  >
+                    {note.title && (
+                      <h4 style={{ marginBottom: 6 }}>
+                        {note.title}
+                      </h4>
+                    )}
+
+                    <p style={{ whiteSpace: 'pre-wrap' }}>
+                      {note.message}
+                    </p>
+
+                    <p className="subtitle" style={{ marginTop: 8 }}>
+                      — {note.author || 'Admin'}{' '}
+                      {note.createdAt &&
+                        `• ${new Date(note.createdAt).toLocaleString()}`}
+                    </p>
+
+                    {/* Delete button is rendered ONLY for admin */}
+                    {isAdmin && note._id && (
+                      <button
+                        type="button"
+                        className="action-btn delete"
+                        onClick={() =>
+                          handleDeleteAnnouncement(note._id)
+                        }
+                      >
+                        <i className="fa-solid fa-trash-can"></i>{' '}
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN PANEL */}
+        {activeTab === 'admin' && isAdmin && (
           <div className="premium-card">
             <div className="card-header space-between">
-              <h2><i className="fa-solid fa-user-gear"></i> Admin Control Panel</h2>
-              <button className="btn-primary" onClick={() => navigate('/register')}>
-                <i className="fa-solid fa-plus"></i> Add New Student
+              <div>
+                <h2>
+                  <i className="fa-solid fa-user-gear"></i> Admin
+                  Control Panel
+                </h2>
+
+                <p className="subtitle">
+                  Search, edit, or delete students by name, course, or email.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => navigate('/register')}
+              >
+                <i className="fa-solid fa-plus"></i> Add Student
               </button>
+            </div>
+
+            <div className="admin-search-section">
+              <input
+                type="search"
+                className="admin-search-input"
+                placeholder="Search student name, course, or email..."
+                value={adminSearch}
+                onChange={e => setAdminSearch(e.target.value)}
+                aria-label="Search students"
+              />
+
+              <p className="subtitle">
+                Matching students: <strong>{filteredUsers.length}</strong>
+              </p>
+
+              {matchingCourseCount !== null && (
+                <p className="subtitle">
+                  Students enrolled in "{adminSearch.trim()}":{' '}
+                  <strong>{matchingCourseCount}</strong>
+                </p>
+              )}
             </div>
 
             <table className="modern-table">
@@ -326,59 +880,221 @@ const Dashboard = () => {
                   <th>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
-                {allUsers.map((u, index) => (
-                  <tr key={u._id}>
+                {filteredUsers.map((user, index) => (
+                  <tr key={user._id}>
                     <td className="row-id">#{index + 1}</td>
-                    <td className="font-semibold">{u.full_name}</td>
-                    <td>{u.email}</td>
-                    <td>{u.phone || 'N/A'}</td>
-                    <td>{u.course || 'N/A'}</td>
+                    <td>{user.full_name}</td>
+                    <td>{user.email}</td>
+                    <td>{user.phone || 'N/A'}</td>
+                    <td>{user.course || 'N/A'}</td>
                     <td>
-                      <span className={`badge ${u.role}`}>{u.role?.toUpperCase()}</span>
+                      <span className={`badge ${user.role}`}>
+                        {user.role?.toUpperCase()}
+                      </span>
                     </td>
                     <td className="action-cells">
-                      <button className="action-btn edit" onClick={() => setEditingUser(u)}>
-                        <i className="fa-solid fa-pen-to-square"></i> Edit
+                      <button
+                        type="button"
+                        className="action-btn edit"
+                        onClick={() => setEditingUser(user)}
+                      >
+                        <i className="fa-solid fa-pen-to-square"></i>{' '}
+                        Edit
                       </button>
-                      <button className="action-btn delete" onClick={() => handleDeleteUser(u._id)}>
-                        <i className="fa-solid fa-trash-can"></i> Delete
+
+                      <button
+                        type="button"
+                        className="action-btn delete"
+                        onClick={() => handleDeleteUser(user._id)}
+                      >
+                        <i className="fa-solid fa-trash-can"></i>{' '}
+                        Delete
                       </button>
                     </td>
                   </tr>
                 ))}
+
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan="7">No matching students found.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         )}
 
-        {/* --- EDIT MODAL --- */}
-        {editingUser && (
+        {/* ADMIN COURSES */}
+        {activeTab === 'courses' && isAdmin && (
+          <div className="premium-card">
+            <div className="card-header">
+              <div>
+                <h2>
+                  <i className="fa-solid fa-book-open"></i> Easy Skill
+                  Academy Courses
+                </h2>
+
+                <p className="subtitle">
+                  All courses offered by our academy.
+                </p>
+              </div>
+
+              <div className="course-header-actions">
+                <span className="role-pill">
+                  {academyCourses.length} Courses
+                </span>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => navigate('/add-course')}
+                >
+                  <i className="fa-solid fa-plus"></i> Add to Course
+                </button>
+              </div>
+            </div>
+
+            <table className="modern-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Course Name</th>
+                  <th>Category</th>
+                  <th>Enrolled Students</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {academyCourses.map((course, index) => {
+                  const studentCount = allUsers.filter(
+                    user =>
+                      (user.course || '').trim().toLowerCase() ===
+                      course.toLowerCase()
+                  ).length;
+
+                  return (
+                    <tr key={course}>
+                      <td className="row-id">#{index + 1}</td>
+                      <td>{course}</td>
+                      <td>{getCourseCategory(course)}</td>
+                      <td>{studentCount}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="action-btn delete"
+                          onClick={() => handleDeleteCourse(course)}
+                        >
+                          <i className="fa-solid fa-trash-can"></i>{' '}
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {academyCourses.length === 0 && (
+                  <tr>
+                    <td colSpan="5">No courses available.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* EDIT STUDENT MODAL */}
+        {editingUser && isAdmin && (
           <div className="modal-overlay">
             <div className="modal-card">
               <h3>Edit Student Information</h3>
+
               <form onSubmit={handleAdminUserUpdate}>
                 <label>Full Name</label>
-                <input type="text" value={editingUser.full_name} onChange={e => setEditingUser({...editingUser, full_name: e.target.value})} required />
+                <input
+                  type="text"
+                  value={editingUser.full_name || ''}
+                  onChange={e =>
+                    setEditingUser({
+                      ...editingUser,
+                      full_name: e.target.value,
+                    })
+                  }
+                  required
+                />
 
                 <label>Email</label>
-                <input type="email" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} required />
+                <input
+                  type="email"
+                  value={editingUser.email || ''}
+                  onChange={e =>
+                    setEditingUser({
+                      ...editingUser,
+                      email: e.target.value,
+                    })
+                  }
+                  required
+                />
 
                 <label>Phone</label>
-                <input type="text" value={editingUser.phone || ''} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} />
+                <input
+                  type="text"
+                  value={editingUser.phone || ''}
+                  onChange={e =>
+                    setEditingUser({
+                      ...editingUser,
+                      phone: e.target.value,
+                    })
+                  }
+                />
 
                 <label>Course</label>
-                <input type="text" value={editingUser.course || ''} onChange={e => setEditingUser({...editingUser, course: e.target.value})} />
+                <select
+                  value={editingUser.course || ''}
+                  onChange={e =>
+                    setEditingUser({
+                      ...editingUser,
+                      course: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Select Course</option>
+
+                  {academyCourses.map(course => (
+                    <option key={course} value={course}>
+                      {course}
+                    </option>
+                  ))}
+                </select>
 
                 <label>Role</label>
-                <select value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value})}>
+                <select
+                  value={editingUser.role || 'user'}
+                  onChange={e =>
+                    setEditingUser({
+                      ...editingUser,
+                      role: e.target.value,
+                    })
+                  }
+                >
                   <option value="user">user</option>
                   <option value="admin">admin</option>
                 </select>
 
                 <div className="modal-actions">
-                  <button type="submit" className="btn-primary">Save Changes</button>
-                  <button type="button" className="btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary">
+                    Save Changes
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setEditingUser(null)}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </form>
             </div>
